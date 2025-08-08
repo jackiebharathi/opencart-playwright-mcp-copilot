@@ -2,33 +2,30 @@ pipeline {
     agent any
 
     environment {
-        // Define environment variables
         NODE_VERSION = '16'
-        PLAYWRIGHT_VERSION = '1.54.2'
+        PLAYWRIGHT_REPORT_DIR = 'playwright-report'
+        PLAYWRIGHT_JUNIT_FILE = 'test-results/junit.xml'
     }
 
     stages {
         stage('Setup') {
             steps {
-                // Install Node.js
-                nodejs(nodeJSInstallationName: 'Node ' + NODE_VERSION) {
-                    sh 'node -v'
-                    sh 'npm -v'
+                nodejs(nodeJSInstallationName: "Node ${NODE_VERSION}") {
+                    bat 'node -v'
+                    bat 'npm -v'
+                    bat 'npm ci'                             // Install dependencies cleanly
+                    bat 'npx playwright install --with-deps' // Install browsers with dependencies
                 }
-                
-                // Install dependencies
-                sh 'npm run install:deps'
-                
-                // Install Playwright browsers
-                sh 'npm run install:browsers'
             }
         }
 
         stage('Run Tests') {
             steps {
-                nodejs(nodeJSInstallationName: 'Node ' + NODE_VERSION) {
-                    // Run tests and generate reports
-                    sh 'npm run test:ci-except-ddt'
+                nodejs(nodeJSInstallationName: "Node ${NODE_VERSION}") {
+                    // Run Playwright tests with reporters for junit XML and HTML
+                    bat """
+                    npx playwright test --reporter=junit,html --output=${PLAYWRIGHT_REPORT_DIR}
+                    """
                 }
             }
         }
@@ -36,27 +33,26 @@ pipeline {
 
     post {
         always {
-            // Publish test results
-            junit 'test-results/junit.xml'
-            
-            // Archive HTML report
-            publishHTML(target: [
+            // Publish JUnit XML report for Jenkins test results
+            junit allowEmptyResults: true, testResults: "${PLAYWRIGHT_JUNIT_FILE}"
+
+            // Publish HTML report
+            publishHTML([
                 allowMissing: false,
                 alwaysLinkToLastBuild: true,
                 keepAll: true,
-                reportDir: 'playwright-report',
+                reportDir: "${PLAYWRIGHT_REPORT_DIR}",
                 reportFiles: 'index.html',
                 reportName: 'Playwright Report'
             ])
-            
-            // Clean workspace
+
             cleanWs()
         }
-        
+
         success {
             echo 'Tests completed successfully!'
         }
-        
+
         failure {
             echo 'Test execution failed!'
         }
