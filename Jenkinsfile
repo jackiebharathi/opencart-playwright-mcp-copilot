@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        NODE_VERSION = '16'
+        NODE_VERSION = '18'
         PLAYWRIGHT_REPORT_DIR = 'playwright-report'
         PLAYWRIGHT_JUNIT_FILE = 'test-results/junit.xml'
     }
