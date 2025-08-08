@@ -15,7 +15,7 @@ const config = {
 module.exports = defineConfig({
   timeout: config.timeout,
   testDir: './TestCases',
-  //testMatch: '/.*\.spec\.js/',
+  testMatch: /.*\.spec\.js/,
 
   /* Run tests in files in parallel */
   fullyParallel: true,
